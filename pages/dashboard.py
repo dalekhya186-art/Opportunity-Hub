@@ -218,7 +218,7 @@ with col1:
 
 # Image
     st.image(
-        "images/scholarship_icon.png",
+        "image/scholarship_icon.png",
         use_container_width=True
 )
 
@@ -249,7 +249,7 @@ with col2:
 
 # Image
     st.image(
-        "images/internship_icon.png",
+        "image/internship_icon.png",
         use_container_width=True
 )
 
@@ -288,7 +288,7 @@ with col3:
 
 # Image
     st.image(
-        "images/resume_icon.png",
+        "image/resume_icon.png",
         use_container_width=True
 )
 
@@ -320,7 +320,7 @@ with col4:
 
 # Image
     st.image(
-        "images/upload_resume.png",
+        "image/upload_resume.png",
         use_container_width=True
 )
 
@@ -352,7 +352,7 @@ with col5:
 
     # Image
     st.image(
-        "images/interview_icon.png",  
+        "image/interview_icon.png",  
         use_container_width=True
     )
 
