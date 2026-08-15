@@ -1,0 +1,11 @@
+streamlit
+requests
+feedparser
+pypdf
+python-docx
+reportlab
+
+pandas
+numpy
+scikit-learn
+joblib
