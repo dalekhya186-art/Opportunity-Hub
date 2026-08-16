@@ -4,23 +4,15 @@ import pandas as pd
 import joblib
 
 from sklearn.model_selection import train_test_split
-
 from sklearn.compose import ColumnTransformer
-
 from sklearn.pipeline import Pipeline
-
 from sklearn.preprocessing import OneHotEncoder
-
 from sklearn.impute import SimpleImputer
-
 from sklearn.feature_extraction.text import TfidfVectorizer
-
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, r2_score
 
-from sklearn.metrics import (
-    mean_absolute_error,
-    r2_score
-)
+
 # =====================================================
 # PROJECT PATHS
 # =====================================================
@@ -32,30 +24,21 @@ MODEL_PATH = BASE_DIR / "ml" / "interview_model.pkl"
 
 
 # =====================================================
-# FIND CSV DATASET AUTOMATICALLY
+# FIND DATASET
 # =====================================================
 
 csv_files = list(DATA_DIR.glob("*.csv"))
 
 if not csv_files:
-
-    print("\n❌ DATASET NOT FOUND")
-    print("--------------------------------------")
-    print("Data folder:")
-    print(DATA_DIR)
-    print("--------------------------------------")
-    print("No CSV file found inside data folder.")
-    raise SystemExit
+    raise FileNotFoundError(
+        f"No CSV dataset found inside: {DATA_DIR}"
+    )
 
 
-# If only one CSV exists, use it
 if len(csv_files) == 1:
-
     DATA_PATH = csv_files[0]
-
 else:
 
-    # Prefer interview dataset
     interview_files = [
         file
         for file in csv_files
@@ -64,600 +47,436 @@ else:
 
     if interview_files:
         DATA_PATH = interview_files[0]
-
     else:
         DATA_PATH = csv_files[0]
-
-
-print("\n======================================")
-print("🎤 INTERVIEW ML TRAINING")
-print("======================================")
-
-print("\n📂 Dataset found:")
-print(DATA_PATH)
-
-
-# =====================================================
-# LOAD DATASET
-# =====================================================
-
-df = pd.read_csv(DATA_PATH)
-
-print("\n✅ Dataset loaded successfully!")
-print("Total rows:", len(df))
-print("Columns:", list(df.columns))
 
 
 # =====================================================
 # REQUIRED COLUMNS
 # =====================================================
 
-required_columns = [
-
+REQUIRED_COLUMNS = [
     "role",
     "question_type",
     "question",
     "expected_answer",
     "student_answer",
-
-    "keyword_match",
-    "answer_similarity",
-    "answer_length",
-    "technical_terms",
-
-    "score"
-
-]
-
-
-missing_columns = [
-
-    column
-
-    for column in required_columns
-
-    if column not in df.columns
-
-]
-
-
-if missing_columns:
-
-    print("\n❌ REQUIRED COLUMNS MISSING")
-    print("--------------------------------------")
-
-    for column in missing_columns:
-
-        print(
-            " -",
-            column
-        )
-
-    print("--------------------------------------")
-
-    raise SystemExit
-
-
-print(
-    "\n✅ All required columns found!"
-)
-
-
-# =====================================================
-# COPY DATA
-# =====================================================
-
-df = df.copy()
-
-
-# =====================================================
-# TEXT CLEANING
-# =====================================================
-
-text_columns = [
-
-    "role",
-    "question_type",
-    "question",
-    "expected_answer",
-    "student_answer"
-
-]
-
-
-for column in text_columns:
-
-    df[column] = (
-
-        df[column]
-
-        .fillna("")
-
-        .astype(str)
-
-        .str.strip()
-
-    )
-
-
-# =====================================================
-# NUMERIC CLEANING
-# =====================================================
-
-numeric_columns = [
-
     "keyword_match",
     "answer_similarity",
     "answer_length",
     "technical_terms",
     "score"
-
-]
-
-
-for column in numeric_columns:
-
-    df[column] = pd.to_numeric(
-
-        df[column],
-
-        errors="coerce"
-
-    )
-
-
-# =====================================================
-# REMOVE INVALID SCORES
-# =====================================================
-
-df = df.dropna(
-    subset=["score"]
-)
-
-
-# =====================================================
-# LIMIT SCORE
-# =====================================================
-
-df["score"] = df["score"].clip(
-
-    lower=0,
-
-    upper=10
-
-)
-
-
-# =====================================================
-# REMOVE INVALID TEXT ROWS
-# =====================================================
-
-df = df[
-    df["student_answer"].str.len() > 0
 ]
 
 
 # =====================================================
-# CREATE COMBINED TEXT
+# LOAD AND CLEAN DATA
 # =====================================================
 
-df["combined_text"] = (
+def load_dataset():
 
-    df["question"]
+    df = pd.read_csv(DATA_PATH)
 
-    + " "
-
-    + df["expected_answer"]
-
-    + " "
-
-    + df["student_answer"]
-
-)
-
-
-# =====================================================
-# DISPLAY DATASET INFORMATION
-# =====================================================
-
-print("\n======================================")
-print("📊 DATASET INFORMATION")
-print("======================================")
-
-
-print(
-    "Rows after cleaning:",
-    len(df)
-)
-
-
-print(
-    "Roles:",
-    df["role"].nunique()
-)
-
-
-print(
-    "Question types:",
-    df["question_type"].nunique()
-)
-
-
-print(
-    "Average score:",
-    round(
-        df["score"].mean(),
-        2
-    )
-)
-
-
-# =====================================================
-# FEATURES
-# =====================================================
-
-feature_columns = [
-
-    "role",
-    "question_type",
-    "combined_text",
-
-    "keyword_match",
-    "answer_similarity",
-    "answer_length",
-    "technical_terms"
-
-]
-
-
-X = df[
-    feature_columns
-]
-
-
-y = df[
-    "score"
-]
-
-
-# =====================================================
-# TRAIN TEST SPLIT
-# =====================================================
-
-X_train, X_test, y_train, y_test = train_test_split(
-
-    X,
-
-    y,
-
-    test_size=0.20,
-
-    random_state=42
-
-)
-
-
-print("\n======================================")
-print("📊 DATA SPLIT")
-print("======================================")
-
-
-print(
-    "Training rows:",
-    len(X_train)
-)
-
-
-print(
-    "Testing rows:",
-    len(X_test)
-)
-
-
-# =====================================================
-# PREPROCESSOR
-# =====================================================
-
-preprocessor = ColumnTransformer(
-
-    transformers=[
-
-        # =============================================
-        # ROLE
-        # =============================================
-
-        (
-
-            "role",
-
-            Pipeline(
-
-                steps=[
-
-                    (
-
-                        "imputer",
-
-                        SimpleImputer(
-
-                            strategy="most_frequent"
-
-                        )
-
-                    ),
-
-                    (
-
-                        "encoder",
-
-                        OneHotEncoder(
-
-                            handle_unknown="ignore"
-
-                        )
-
-                    )
-
-                ]
-
-            ),
-
-            ["role"]
-
-        ),
-
-
-        # =============================================
-        # QUESTION TYPE
-        # =============================================
-
-        (
-
-            "question_type",
-
-            Pipeline(
-
-                steps=[
-
-                    (
-
-                        "imputer",
-
-                        SimpleImputer(
-
-                            strategy="most_frequent"
-
-                        )
-
-                    ),
-
-                    (
-
-                        "encoder",
-
-                        OneHotEncoder(
-
-                            handle_unknown="ignore"
-
-                        )
-
-                    )
-
-                ]
-
-            ),
-
-            ["question_type"]
-
-        ),
-
-
-        # =============================================
-        # TEXT
-        # =============================================
-
-        (
-
-            "text",
-
-            TfidfVectorizer(
-
-                lowercase=True,
-
-                stop_words="english",
-
-                ngram_range=(1, 2),
-
-                max_features=3000
-
-            ),
-
-            "combined_text"
-
-        ),
-
-
-        # =============================================
-        # NUMERIC FEATURES
-        # =============================================
-
-        (
-
-            "numeric",
-
-            Pipeline(
-
-                steps=[
-
-                    (
-
-                        "imputer",
-
-                        SimpleImputer(
-
-                            strategy="median"
-
-                        )
-
-                    )
-
-                ]
-
-            ),
-
-            [
-
-                "keyword_match",
-
-                "answer_similarity",
-
-                "answer_length",
-
-                "technical_terms"
-
-            ]
-
-        )
-
+    missing_columns = [
+        column
+        for column in REQUIRED_COLUMNS
+        if column not in df.columns
     ]
 
-)
-
-
-# =====================================================
-# MODEL
-# =====================================================
-
-model = RandomForestRegressor(
-
-    n_estimators=300,
-
-    max_depth=15,
-
-    min_samples_split=2,
-
-    min_samples_leaf=1,
-
-    random_state=42,
-
-    n_jobs=-1
-
-)
-
-
-# =====================================================
-# COMPLETE PIPELINE
-# =====================================================
-
-pipeline = Pipeline(
-
-    steps=[
-
-        (
-
-            "preprocessor",
-
-            preprocessor
-
-        ),
-
-        (
-
-            "model",
-
-            model
-
+    if missing_columns:
+        raise ValueError(
+            "Dataset is missing required columns: "
+            + ", ".join(missing_columns)
         )
 
+    df = df.copy()
+
+    # -------------------------------------------------
+    # TEXT COLUMNS
+    # -------------------------------------------------
+
+    text_columns = [
+        "role",
+        "question_type",
+        "question",
+        "expected_answer",
+        "student_answer"
     ]
 
-)
+    for column in text_columns:
+
+        df[column] = (
+            df[column]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+
+    # -------------------------------------------------
+    # NUMERIC COLUMNS
+    # -------------------------------------------------
+
+    numeric_columns = [
+        "keyword_match",
+        "answer_similarity",
+        "answer_length",
+        "technical_terms",
+        "score"
+    ]
+
+    for column in numeric_columns:
+
+        df[column] = pd.to_numeric(
+            df[column],
+            errors="coerce"
+        )
+
+    # -------------------------------------------------
+    # REMOVE INVALID SCORES
+    # -------------------------------------------------
+
+    df = df.dropna(
+        subset=["score"]
+    )
+
+    # -------------------------------------------------
+    # LIMIT SCORE
+    # -------------------------------------------------
+
+    df["score"] = df["score"].clip(
+        lower=0,
+        upper=10
+    )
+
+    # -------------------------------------------------
+    # REMOVE EMPTY ANSWERS
+    # -------------------------------------------------
+
+    df = df[
+        df["student_answer"].str.len() > 0
+    ]
+
+    # -------------------------------------------------
+    # CREATE COMBINED TEXT
+    #
+    # IMPORTANT:
+    # This column MUST exist before feature_columns.
+    # -------------------------------------------------
+
+    df["combined_text"] = (
+        df["question"]
+        + " "
+        + df["expected_answer"]
+        + " "
+        + df["student_answer"]
+    )
+
+    return df
 
 
 # =====================================================
 # TRAIN MODEL
 # =====================================================
 
-print("\n======================================")
-print("🤖 TRAINING MODEL")
-print("======================================")
+def train_model():
 
+    print("\n======================================")
+    print("🎤 INTERVIEW ML TRAINING")
+    print("======================================")
 
-pipeline.fit(
+    print("\nDataset:")
+    print(DATA_PATH)
 
-    X_train,
+    df = load_dataset()
 
-    y_train
+    print("\nRows:", len(df))
+    print("Columns:", list(df.columns))
 
-)
+    if len(df) < 2:
+        raise ValueError(
+            "Dataset must contain at least 2 valid rows."
+        )
 
+    # =================================================
+    # FEATURES
+    # =================================================
 
-print(
-    "\n✅ Model training completed!"
-)
+    feature_columns = [
+        "role",
+        "question_type",
+        "combined_text",
+        "keyword_match",
+        "answer_similarity",
+        "answer_length",
+        "technical_terms"
+    ]
+
+    X = df[feature_columns]
+
+    y = df["score"]
+
+    # =================================================
+    # TRAIN TEST SPLIT
+    # =================================================
+
+    # For very small datasets, use all data for training.
+    if len(df) < 5:
+
+        X_train = X
+        X_test = X
+        y_train = y
+        y_test = y
+
+    else:
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=0.20,
+            random_state=42
+        )
+
+    print("\nTraining rows:", len(X_train))
+    print("Testing rows:", len(X_test))
+
+    # =================================================
+    # PREPROCESSOR
+    # =================================================
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+
+            # -----------------------------------------
+            # ROLE
+            # -----------------------------------------
+
+            (
+                "role",
+
+                Pipeline(
+                    steps=[
+                        (
+                            "imputer",
+                            SimpleImputer(
+                                strategy="most_frequent"
+                            )
+                        ),
+
+                        (
+                            "encoder",
+                            OneHotEncoder(
+                                handle_unknown="ignore"
+                            )
+                        )
+                    ]
+                ),
+
+                ["role"]
+            ),
+
+            # -----------------------------------------
+            # QUESTION TYPE
+            # -----------------------------------------
+
+            (
+                "question_type",
+
+                Pipeline(
+                    steps=[
+                        (
+                            "imputer",
+                            SimpleImputer(
+                                strategy="most_frequent"
+                            )
+                        ),
+
+                        (
+                            "encoder",
+                            OneHotEncoder(
+                                handle_unknown="ignore"
+                            )
+                        )
+                    ]
+                ),
+
+                ["question_type"]
+            ),
+
+            # -----------------------------------------
+            # TEXT
+            # -----------------------------------------
+
+            (
+                "text",
+
+                TfidfVectorizer(
+                    lowercase=True,
+                    stop_words="english",
+                    ngram_range=(1, 2),
+                    max_features=3000
+                ),
+
+                "combined_text"
+            ),
+
+            # -----------------------------------------
+            # NUMERIC FEATURES
+            # -----------------------------------------
+
+            (
+                "numeric",
+
+                Pipeline(
+                    steps=[
+                        (
+                            "imputer",
+                            SimpleImputer(
+                                strategy="median"
+                            )
+                        )
+                    ]
+                ),
+
+                [
+                    "keyword_match",
+                    "answer_similarity",
+                    "answer_length",
+                    "technical_terms"
+                ]
+            )
+        ]
+    )
+
+    # =================================================
+    # MODEL
+    # =================================================
+
+    model = RandomForestRegressor(
+        n_estimators=300,
+        max_depth=15,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        random_state=42,
+        n_jobs=-1
+    )
+
+    # =================================================
+    # COMPLETE PIPELINE
+    # =================================================
+
+    pipeline = Pipeline(
+        steps=[
+            (
+                "preprocessor",
+                preprocessor
+            ),
+
+            (
+                "model",
+                model
+            )
+        ]
+    )
+
+    # =================================================
+    # TRAIN
+    # =================================================
+
+    print("\n🤖 Training model...")
+
+    pipeline.fit(
+        X_train,
+        y_train
+    )
+
+    print("✅ Training completed!")
+
+    # =================================================
+    # TEST
+    # =================================================
+
+    predictions = pipeline.predict(
+        X_test
+    )
+
+    predictions = predictions.clip(
+        0,
+        10
+    )
+
+    mae = mean_absolute_error(
+        y_test,
+        predictions
+    )
+
+    # R2 only when enough different target values exist
+    try:
+        r2 = r2_score(
+            y_test,
+            predictions
+        )
+    except Exception:
+        r2 = 0.0
+
+    print("\n======================================")
+    print("📈 MODEL EVALUATION")
+    print("======================================")
+
+    print(
+        f"MAE Score : {mae:.4f}"
+    )
+
+    print(
+        f"R2 Score  : {r2:.4f}"
+    )
+
+    # =================================================
+    # SAVE MODEL
+    # =================================================
+
+    joblib.dump(
+        pipeline,
+        MODEL_PATH
+    )
+
+    print("\n💾 Model saved:")
+    print(MODEL_PATH)
+
+    return pipeline
 
 
 # =====================================================
-# PREDICTION
+# LOAD MODEL
 # =====================================================
 
-predictions = pipeline.predict(
+def get_model():
 
-    X_test
+    # If model doesn't exist, train it.
+    if not MODEL_PATH.exists():
 
-)
+        return train_model()
+
+    try:
+
+        return joblib.load(
+            MODEL_PATH
+        )
+
+    except Exception:
+
+        print(
+            "Existing model could not be loaded."
+        )
+
+        print(
+            "Training a new model..."
+        )
+
+        return train_model()
 
 
 # =====================================================
-# LIMIT PREDICTIONS
-# =====================================================
-
-predictions = predictions.clip(
-
-    0,
-
-    10
-
-)
-
-
-# =====================================================
-# EVALUATION
-# =====================================================
-
-mae = mean_absolute_error(
-
-    y_test,
-
-    predictions
-
-)
-
-
-r2 = r2_score(
-
-    y_test,
-
-    predictions
-
-)
-
-
-print("\n======================================")
-print("📈 MODEL EVALUATION")
-print("======================================")
-
-
-print(
-    f"MAE Score : {mae:.4f}"
-)
-
-
-print(
-    f"R2 Score  : {r2:.4f}"
-)
-# =====================================================
-# LOAD TRAINED MODEL
+# EVALUATE ANSWER
 # =====================================================
 
 def evaluate_answer(
@@ -672,14 +491,21 @@ def evaluate_answer(
     technical_terms
 ):
 
-    # Load trained model
-    trained_model = joblib.load(MODEL_PATH)
+    trained_model = get_model()
 
-    # Create input data
+    # -------------------------------------------------
+    # INPUT DATA
+    #
+    # MUST contain the exact same columns used during
+    # training.
+    # -------------------------------------------------
+
     input_data = pd.DataFrame([
         {
             "role": role,
+
             "question_type": question_type,
+
             "combined_text": (
                 question
                 + " "
@@ -687,55 +513,65 @@ def evaluate_answer(
                 + " "
                 + student_answer
             ),
+
             "keyword_match": keyword_match,
+
             "answer_similarity": answer_similarity,
+
             "answer_length": answer_length,
+
             "technical_terms": technical_terms
         }
     ])
 
-    # Predict score
-    prediction = trained_model.predict(input_data)[0]
+    # -------------------------------------------------
+    # PREDICTION
+    # -------------------------------------------------
 
-    # Keep score between 0 and 10
-    prediction = max(0, min(10, prediction))
+    try:
 
-    return round(prediction, 2)
+        prediction = trained_model.predict(
+            input_data
+        )[0]
+
+    except Exception as error:
+
+        print(
+            "Existing model is incompatible."
+        )
+
+        print(
+            "Retraining model..."
+        )
+
+        trained_model = train_model()
+
+        prediction = trained_model.predict(
+            input_data
+        )[0]
+
+    # -------------------------------------------------
+    # LIMIT SCORE
+    # -------------------------------------------------
+
+    prediction = max(
+        0,
+        min(
+            10,
+            float(prediction)
+        )
+    )
+
+    return round(
+        prediction,
+        2
+    )
 
 
 # =====================================================
-# SAVE MODEL
+# DO NOT TRAIN WHEN IMPORTING
 # =====================================================
 
-joblib.dump(
+if __name__ == "__main__":
 
-    pipeline,
-
-    MODEL_PATH
-
-)
-
-
-print("\n======================================")
-print("💾 MODEL SAVED")
-print("======================================")
-
-
-print(
-    "Model:"
-)
-
-
-print(
-    MODEL_PATH
-)
-
-
-print(
-    "\n🎉 INTERVIEW ML MODEL TRAINING COMPLETED!"
-)
-
-
-print(
-    "You can now use interview_recommend.py"
-)
+    train_model()
