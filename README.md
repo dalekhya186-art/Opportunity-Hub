@@ -530,7 +530,7 @@ into a single student-focused web application.
 
 GitHub:
 
-[https://github.com/dalekhyah186-art/Opportunity-Hub](https://github.com/dalekhyah186-art/Opportunity-Hub)
+https://github.com/dalekhya186-art/Opportunity-Hub
 
 ---
 
