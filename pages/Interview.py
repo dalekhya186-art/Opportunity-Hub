@@ -4,6 +4,7 @@ import sys
 import random
 from pathlib import Path
 
+
 # =====================================================
 # PROJECT ROOT
 # =====================================================
@@ -825,115 +826,429 @@ QUESTION_BANK = {
 # =====================================================
 # SESSION STATE
 # =====================================================
+
 if "interview_started" not in st.session_state:
     st.session_state.interview_started = False
+
 if "current_question" not in st.session_state:
     st.session_state.current_question = 0
+
 if "questions" not in st.session_state:
     st.session_state.questions = []
+
 if "scores" not in st.session_state:
     st.session_state.scores = []
+
 if "interview_completed" not in st.session_state:
     st.session_state.interview_completed = False
+
 if "interview_role" not in st.session_state:
     st.session_state.interview_role = ""
+
 if "interview_type" not in st.session_state:
     st.session_state.interview_type = ""
+
 
 # =====================================================
 # FEATURE CALCULATION
 # =====================================================
-def calculate_interview_features(answer, keywords, expected_answer):
+
+def calculate_interview_features(
+    answer,
+    keywords,
+    expected_answer
+):
+
     answer_lower = answer.lower()
-    matched = [kw for kw in keywords if kw.lower() in answer_lower]
-    keyword_match = len(matched) / len(keywords) if keywords else 0.0
-    answer_length = len(answer.split())
-    technical_terms = len(matched)
-    expected_words = set(expected_answer.lower().split())
-    answer_words = set(answer_lower.split())
-    answer_similarity = len(expected_words.intersection(answer_words)) / len(expected_words) if expected_words else 0.0
-    return keyword_match, answer_similarity, answer_length, technical_terms, matched
+
+    matched = [
+        kw
+        for kw in keywords
+        if kw.lower() in answer_lower
+    ]
+
+    keyword_match = (
+        len(matched) / len(keywords)
+        if keywords
+        else 0.0
+    )
+
+    answer_length = len(
+        answer.split()
+    )
+
+    technical_terms = len(
+        matched
+    )
+
+    expected_words = set(
+        expected_answer.lower().split()
+    )
+
+    answer_words = set(
+        answer_lower.split()
+    )
+
+    answer_similarity = (
+        len(
+            expected_words.intersection(
+                answer_words
+            )
+        )
+        / len(expected_words)
+        if expected_words
+        else 0.0
+    )
+
+    return (
+        keyword_match,
+        answer_similarity,
+        answer_length,
+        technical_terms,
+        matched
+    )
+
 
 # =====================================================
 # PAGE HEADER
 # =====================================================
+
 st.title("🎤 Interview Preparation")
-st.write("Practice technical and HR interview questions using an ML-based answer evaluation system.")
+
+st.write(
+    "Practice technical and HR interview questions "
+    "using an ML-based answer evaluation system."
+)
+
 st.divider()
+
 
 # =====================================================
 # INTERVIEW SETUP
 # =====================================================
+
 if not st.session_state.interview_started:
-    role = st.selectbox("🎯 Select Target Role", list(QUESTION_BANK.keys()))
-    interview_type = st.selectbox("📚 Interview Type", ["Technical"])
-    number = st.selectbox("📋 Number of Questions", [1, 3])
-    if st.button("🚀 Start Interview", use_container_width=True):
-        st.session_state.questions = random.sample(QUESTION_BANK[role][interview_type], min(number, len(QUESTION_BANK[role][interview_type])))
-        st.session_state.interview_role = role
-        st.session_state.interview_type = interview_type
+
+    role = st.selectbox(
+        "🎯 Select Target Role",
+        list(QUESTION_BANK.keys())
+    )
+
+    interview_type = st.selectbox(
+        "📚 Interview Type",
+        ["Technical"]
+    )
+
+    number = st.selectbox(
+        "📋 Number of Questions",
+        [1, 3]
+    )
+
+    if st.button(
+        "🚀 Start Interview",
+        use_container_width=True
+    ):
+
+        available_questions = (
+            QUESTION_BANK[
+                role
+            ][
+                interview_type
+            ]
+        )
+
+        selected_questions = random.sample(
+            available_questions,
+            min(
+                number,
+                len(available_questions)
+            )
+        )
+
+        st.session_state.questions = (
+            selected_questions
+        )
+
+        st.session_state.interview_role = (
+            role
+        )
+
+        st.session_state.interview_type = (
+            interview_type
+        )
+
         st.session_state.current_question = 0
+
         st.session_state.scores = []
+
         st.session_state.interview_started = True
+
         st.session_state.interview_completed = False
+
         st.rerun()
+
 
 # =====================================================
 # INTERVIEW IN PROGRESS
 # =====================================================
-elif st.session_state.interview_started and not st.session_state.interview_completed:
-    total = len(st.session_state.questions)
-    current = st.session_state.current_question
-    question_data = st.session_state.questions[current]
 
-    st.subheader(f"Question {current+1} of {total}")
-    st.write(f"❓ {question_data['question']}")
+elif (
+    st.session_state.interview_started
+    and not st.session_state.interview_completed
+):
 
-    answer = st.text_area("✍️ Type your answer", key=f"answer_{current}_{random.randint(1,9999)}")
+    total = len(
+        st.session_state.questions
+    )
 
-    if st.button("✅ Submit Answer", use_container_width=True):
-        keyword_match, answer_similarity, answer_length, technical_terms, matched = calculate_interview_features(
-            answer, question_data["keywords"], question_data["expected_answer"]
-        )
+    current = (
+        st.session_state.current_question
+    )
 
-        result = ml_evaluate_answer(
-            st.session_state.interview_role,
-            st.session_state.interview_type,
-            question_data["question"],
-            question_data["expected_answer"],
-            answer,
-            keyword_match,
-            answer_similarity,
-            answer_length,
-            technical_terms
-        )
+    question_data = (
+        st.session_state.questions[
+            current
+        ]
+    )
 
-        score = result
-        st.session_state.scores.append(score)
-        st.success(f"Predicted Score: {score}/10")
+    st.subheader(
+        f"Question {current + 1} of {total}"
+    )
 
-    if st.button("➡️ Next Question", use_container_width=True):
+    st.write(
+        f"❓ {question_data['question']}"
+    )
+
+    answer = st.text_area(
+        "✍️ Type your answer",
+        key=f"answer_{current}"
+    )
+
+
+    # =================================================
+    # SUBMIT ANSWER
+    # =================================================
+
+    if st.button(
+        "✅ Submit Answer",
+        use_container_width=True
+    ):
+
+        if not answer.strip():
+
+            st.warning(
+                "⚠️ Please type an answer before submitting."
+            )
+
+        else:
+
+            (
+                keyword_match,
+                answer_similarity,
+                answer_length,
+                technical_terms,
+                matched
+            ) = calculate_interview_features(
+                answer,
+                question_data["keywords"],
+                question_data["expected_answer"]
+            )
+
+
+            # -----------------------------------------
+            # ML MODEL
+            # -----------------------------------------
+
+            result = ml_evaluate_answer(
+
+                st.session_state.interview_role,
+
+                st.session_state.interview_type,
+
+                question_data["question"],
+
+                question_data["expected_answer"],
+
+                answer,
+
+                keyword_match,
+
+                answer_similarity,
+
+                answer_length,
+
+                technical_terms
+            )
+
+
+            # -----------------------------------------
+            # SAVE SCORE
+            # -----------------------------------------
+
+            # Prevent duplicate score for same question
+            if len(
+                st.session_state.scores
+            ) <= current:
+
+                st.session_state.scores.append(
+                    result
+                )
+
+            else:
+
+                st.session_state.scores[current] = (
+                    result
+                )
+
+
+            # -----------------------------------------
+            # DISPLAY RESULT
+            # -----------------------------------------
+
+            st.success(
+                f"🎯 Predicted Score: {result}/10"
+            )
+
+            st.write(
+                f"🔑 Keyword Match: "
+                f"{keyword_match:.2f}"
+            )
+
+            st.write(
+                f"📚 Answer Similarity: "
+                f"{answer_similarity:.2f}"
+            )
+
+            st.write(
+                f"📝 Answer Length: "
+                f"{answer_length} words"
+            )
+
+            st.write(
+                f"💡 Technical Terms: "
+                f"{technical_terms}"
+            )
+
+
+    # =================================================
+    # NEXT QUESTION
+    # =================================================
+
+    if st.button(
+        "➡️ Next Question",
+        use_container_width=True
+    ):
+
         st.session_state.current_question += 1
-        if st.session_state.current_question >= total:
+
+        if (
+            st.session_state.current_question
+            >= total
+        ):
+
             st.session_state.interview_completed = True
+
         st.rerun()
+
 
 # =====================================================
 # REVIEW PAGE
 # =====================================================
+
 elif st.session_state.interview_completed:
-    st.subheader("🎉 Interview Completed!")
 
-    if len(st.session_state.scores) > 0:
-        avg_score = sum(st.session_state.scores) / len(st.session_state.scores)
-        st.write(f"✅ Average Score: {avg_score:.2f}/10")
+    st.subheader(
+        "🎉 Interview Completed!"
+    )
+
+    # -------------------------------------------------
+    # AVERAGE SCORE
+    # -------------------------------------------------
+
+    if len(
+        st.session_state.scores
+    ) > 0:
+
+        avg_score = (
+            sum(
+                st.session_state.scores
+            )
+            /
+            len(
+                st.session_state.scores
+            )
+        )
+
+        st.success(
+            f"✅ Average Score: "
+            f"{avg_score:.2f}/10"
+        )
+
     else:
-        st.warning("⚠️ No answers were submitted, so no scores to calculate.")
 
-    st.write("📝 Review of your answers:")
-    for i, q in enumerate(st.session_state.questions):
-        st.write(f"Q{i+1}: {q['question']}")
-        if i < len(st.session_state.scores):
-            st.write(f"Score: {st.session_state.scores[i]}/10")
+        st.warning(
+            "⚠️ No answers were submitted."
+        )
+
+
+    # -------------------------------------------------
+    # REVIEW
+    # -------------------------------------------------
+
+    st.write(
+        "📝 Review of your answers:"
+    )
+
+    for i, q in enumerate(
+        st.session_state.questions
+    ):
+
+        st.write(
+            f"### Q{i + 1}: "
+            f"{q['question']}"
+        )
+
+        if (
+            i
+            <
+            len(
+                st.session_state.scores
+            )
+        ):
+
+            st.write(
+                f"🎯 Score: "
+                f"{st.session_state.scores[i]}/10"
+            )
+
         else:
-            st.write("Score: Not submitted ❌")
+
+            st.write(
+                "Score: Not submitted ❌"
+            )
+
+
+    # -------------------------------------------------
+    # NEW INTERVIEW
+    # -------------------------------------------------
+
+    if st.button(
+        "🔄 Start New Interview",
+        use_container_width=True
+    ):
+
+        st.session_state.interview_started = False
+
+        st.session_state.current_question = 0
+
+        st.session_state.questions = []
+
+        st.session_state.scores = []
+
+        st.session_state.interview_completed = False
+
+        st.session_state.interview_role = ""
+
+        st.session_state.interview_type = ""
+
+        st.rerun()
