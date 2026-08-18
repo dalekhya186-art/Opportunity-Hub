@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 # =========================================================
 # PAGE CONFIG
 # =========================================================
@@ -10,6 +9,15 @@ st.set_page_config(
     page_icon="🎓",
     layout="wide"
 )
+
+
+# =========================================================
+# THEME
+# =========================================================
+
+from theme import apply_theme
+
+apply_theme()
 
 
 # =========================================================
@@ -24,59 +32,22 @@ if not st.session_state.get("logged_in", False):
 
 
 # =========================================================
-# CSS
-# =========================================================
-
-st.markdown("""
-<style>
-
-.main-title {
-    font-size: 38px;
-    font-weight: 700;
-    color: #1f3c88;
-}
-
-.subtitle {
-    font-size: 18px;
-    color: #666;
-}
-
-.card {
-    padding: 25px;
-    border-radius: 15px;
-    background-color: #ffffff;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-}
-
-.card-title {
-    font-size: 25px;
-    font-weight: 600;
-    color: #263238;
-}
-
-.card-text {
-    color: #666;
-    font-size: 16px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("📚 Menu")
+st.sidebar.title("🎓 Opportunity Hub")
+
+st.sidebar.caption("Your Future, Our Priority")
 
 st.sidebar.divider()
 
 
-# HOME
+# =========================================================
+# SIDEBAR NAVIGATION
+# =========================================================
 
 if st.sidebar.button(
-    "🏠 Home",
+    "🏠  Dashboard",
     use_container_width=True
 ):
 
@@ -85,22 +56,8 @@ if st.sidebar.button(
     )
 
 
-# SCHOLARSHIPS
-
 if st.sidebar.button(
-    "🎓 Scholarships",
-    use_container_width=True
-):
-
-    st.switch_page(
-        "pages/Scholarships.py"
-    )
-
-
-# INTERNSHIPS
-
-if st.sidebar.button(
-    "💼 Internships",
+    "💼  Internships",
     use_container_width=True
 ):
 
@@ -109,10 +66,38 @@ if st.sidebar.button(
     )
 
 
-# RESUME
+if st.sidebar.button(
+    "🎓  Scholarships",
+    use_container_width=True
+):
+
+    st.switch_page(
+        "pages/Scholarships.py"
+    )
+
 
 if st.sidebar.button(
-    "📄 Create Resume",
+    "🎤  Interview Prep",
+    use_container_width=True
+):
+
+    st.switch_page(
+        "pages/Interview.py"
+    )
+
+
+if st.sidebar.button(
+    "🤖  Recommendations",
+    use_container_width=True
+):
+
+    st.switch_page(
+        "pages/Recommendations.py"
+    )
+
+
+if st.sidebar.button(
+    "📄  Resume Builder",
     use_container_width=True
 ):
 
@@ -121,26 +106,69 @@ if st.sidebar.button(
     )
 
 
-# RECOMMENDATIONS
+st.sidebar.divider()
+
+
+# =========================================================
+# QUICK ACTIONS
+# =========================================================
+
+st.sidebar.subheader("⚡ Quick Actions")
+
 
 if st.sidebar.button(
-    "🤖 Job Recommendations",
-    use_container_width=True
+    "🔍  Find Internships",
+    use_container_width=True,
+    key="side_internship"
+):
+
+    st.switch_page(
+        "pages/Internships.py"
+    )
+
+
+if st.sidebar.button(
+    "🎓  Find Scholarships",
+    use_container_width=True,
+    key="side_scholarship"
+):
+
+    st.switch_page(
+        "pages/Scholarships.py"
+    )
+
+
+if st.sidebar.button(
+    "📄  Create Resume",
+    use_container_width=True,
+    key="side_resume"
+):
+
+    st.switch_page(
+        "pages/Resume.py"
+    )
+
+
+if st.sidebar.button(
+    "🤖  Job Recommendations",
+    use_container_width=True,
+    key="side_jobs"
 ):
 
     st.switch_page(
         "pages/Recommendations.py"
     )
- # INTERVIEW
+
 
 if st.sidebar.button(
-    "📝 Interviews",
-    use_container_width=True
+    "🎤  Interview Practice",
+    use_container_width=True,
+    key="side_interview"
 ):
+
     st.switch_page(
         "pages/Interview.py"
     )
-
 
 
 st.sidebar.divider()
@@ -151,7 +179,7 @@ st.sidebar.divider()
 # =========================================================
 
 if st.sidebar.button(
-    "🚪 Logout",
+    "🚪  Logout",
     use_container_width=True
 ):
 
@@ -168,212 +196,268 @@ if st.sidebar.button(
 # HEADER
 # =========================================================
 
-st.markdown(
-    '<div class="main-title">'
-    '🎓 Student Opportunity Hub'
-    '</div>',
-    unsafe_allow_html=True
+st.title("Dashboard")
+
+st.write(
+    "Explore opportunities and build your career."
 )
-
-
-st.markdown(
-    '<div class="subtitle">'
-    'Your single platform for discovering scholarships, '
-    'internships, resumes and jobs.'
-    '</div>',
-    unsafe_allow_html=True
-)
-
 
 st.divider()
 
 
 # =========================================================
-# WELCOME
+# WELCOME BANNER
 # =========================================================
 
 st.success(
-    "🎉 Login successful! Welcome to Student Opportunity Hub."
+    "🎉 Welcome back! Let's explore new opportunities "
+    "and achieve your goals."
 )
 
 
 # =========================================================
-# SCHOLARSHIP + INTERNSHIP
+# STATISTICS
 # =========================================================
 
-col1, col2 = st.columns(2)
+c1, c2, c3, c4 = st.columns(4)
+
+
+with c1:
+
+    with st.container(border=True):
+
+        st.subheader("💼 Internships")
+
+        st.metric(
+            "Active Opportunities",
+            "120+"
+        )
+
+
+with c2:
+
+    with st.container(border=True):
+
+        st.subheader("🎓 Scholarships")
+
+        st.metric(
+            "Available Now",
+            "85+"
+        )
+
+
+with c3:
+
+    with st.container(border=True):
+
+        st.subheader("🎤 Interviews")
+
+        st.metric(
+            "Practice Sessions",
+            "10"
+        )
+
+
+with c4:
+
+    with st.container(border=True):
+
+        st.subheader("✨ Matches")
+
+        st.metric(
+            "Profile Strength",
+            "98%"
+        )
+
+
+st.divider()
 
 
 # =========================================================
-# SCHOLARSHIPS
+# QUICK ACTION CARDS
 # =========================================================
+
+st.subheader("🚀 Quick Actions")
+
+
+# =========================================================
+# ROW 1
+# =========================================================
+
+col1, col2, col3 = st.columns(3)
+
+
+# ---------------------------------------------------------
+# INTERNSHIP
+# ---------------------------------------------------------
 
 with col1:
-    st.markdown(
-    """
-    <div class="card">
-    """,
-    unsafe_allow_html=True
-)
 
-# Image
-    st.image(
-        "image/scholarship_icon.png",
-        use_container_width=True
-)
+    with st.container(border=True):
 
-
-
-    if st.button(
-        "🔎 Find Scholarships",
-        use_container_width=True,
-        key="scholarship_home"
-    ):
-
-        st.switch_page(
-            "pages/Scholarships.py"
+        st.image(
+            "image/internship_icon.png",
+            use_container_width=True
         )
 
+        st.subheader("Find Internships")
 
-# =========================================================
-# INTERNSHIPS
-# =========================================================
+        st.write(
+            "Discover internships that match "
+            "your skills and interests."
+        )
+
+        if st.button(
+            "Explore Internships →",
+            use_container_width=True,
+            key="dashboard_internship"
+        ):
+
+            st.switch_page(
+                "pages/Internships.py"
+            )
+
+
+# ---------------------------------------------------------
+# SCHOLARSHIP
+# ---------------------------------------------------------
 
 with col2:
-    st.markdown(
-    """
-    <div class="card">
-    """,
-    unsafe_allow_html=True
-)
 
-# Image
-    st.image(
-        "image/internship_icon.png",
-        use_container_width=True
-)
+    with st.container(border=True):
 
-
-
-
-    if st.button(
-        "🔎 Find Internships",
-        use_container_width=True,
-        key="internship_home"
-    ):
-
-        st.switch_page(
-            "pages/Internships.py"
+        st.image(
+            "image/scholarship_icon.png",
+            use_container_width=True
         )
 
+        st.subheader("Find Scholarships")
 
-# =========================================================
-# RESUME + JOBS
-# =========================================================
+        st.write(
+            "Find scholarships that fit your "
+            "profile and achievements."
+        )
 
-col3, col4 = st.columns(2)
+        if st.button(
+            "Explore Scholarships →",
+            use_container_width=True,
+            key="dashboard_scholarship"
+        ):
+
+            st.switch_page(
+                "pages/Scholarships.py"
+            )
 
 
-# =========================================================
+# ---------------------------------------------------------
 # RESUME
-# =========================================================
+# ---------------------------------------------------------
 
 with col3:
-    st.markdown(
-    """
-    <div class="card">
-    """,
-    unsafe_allow_html=True
-)
 
-# Image
-    st.image(
-        "image/resume_icon.png",
-        use_container_width=True
-)
+    with st.container(border=True):
 
-
-
-
-    if st.button(
-        "📄 Create Resume",
-        use_container_width=True,
-        key="resume_home"
-    ):
-
-        st.switch_page(
-            "pages/Resume.py"
+        st.image(
+            "image/resume_icon.png",
+            use_container_width=True
         )
 
+        st.subheader("Create Resume")
+
+        st.write(
+            "Build a professional resume "
+            "that stands out."
+        )
+
+        if st.button(
+            "Create Resume →",
+            use_container_width=True,
+            key="dashboard_resume"
+        ):
+
+            st.switch_page(
+                "pages/Resume.py"
+            )
+
 
 # =========================================================
-# JOB RECOMMENDATIONS
+# ROW 2
 # =========================================================
+
+col4, col5, col6 = st.columns(3)
+
+
+# ---------------------------------------------------------
+# JOB RECOMMENDATIONS
+# ---------------------------------------------------------
 
 with col4:
-    st.markdown(
-    """
-    <div class="card">
-    """,
-    unsafe_allow_html=True
-)
 
-# Image
-    st.image(
-        "image/upload_resume.png",
-        use_container_width=True
-)
+    with st.container(border=True):
 
-
-
-
-    if st.button(
-        "🤖 Find Recommended Jobs",
-        use_container_width=True,
-        key="jobs_home"
-    ):
-
-        st.switch_page(
-            "pages/Recommendations.py"
+        st.image(
+            "image/upload_resume.png",
+            use_container_width=True
         )
-# =========================================================
-# INTERVIEW CARD
-# =========================================================
 
-col5, col6 = st.columns(2)
+        st.subheader("Job Recommendations")
+
+        st.write(
+            "Get AI-powered job recommendations "
+            "just for you."
+        )
+
+        if st.button(
+            "View Recommendations →",
+            use_container_width=True,
+            key="dashboard_jobs"
+        ):
+
+            st.switch_page(
+                "pages/Recommendations.py"
+            )
+
+
+# ---------------------------------------------------------
+# INTERVIEW
+# ---------------------------------------------------------
 
 with col5:
-    st.markdown(
-        """
-        <div class="card">
-        """,
-        unsafe_allow_html=True
-    )
 
-    # Image
-    st.image(
-        "image/interview_icon.png",  
-        use_container_width=True
-    )
+    with st.container(border=True):
 
-    if st.button(
-        "📝 Practice Interviews",
-        use_container_width=True,
-        key="interview_home"
-    ):
-        st.switch_page(
-            "pages/Interview.py"
+        st.image(
+            "image/interview_icon.png",
+            use_container_width=True
         )
 
+        st.subheader("Interview Practice")
 
+        st.write(
+            "Practice interviews and improve "
+            "your confidence."
+        )
+
+        if st.button(
+            "Start Practice →",
+            use_container_width=True,
+            key="dashboard_interview"
+        ):
+
+            st.switch_page(
+                "pages/Interview.py"
+            )
+
+
+            
 
 # =========================================================
-# FEATURES
+# PLATFORM FEATURES
 # =========================================================
 
 st.divider()
 
-st.header("✨ Platform Features")
+st.subheader("✨ Platform Features")
 
 
 f1, f2, f3, f4 = st.columns(4)
@@ -381,31 +465,47 @@ f1, f2, f3, f4 = st.columns(4)
 
 with f1:
 
-    st.info(
-        "🎓 **Scholarships**\n\n"
-        "Latest scholarship updates."
-    )
+    with st.container(border=True):
+
+        st.subheader("🎓 Scholarships")
+
+        st.write(
+            "Find scholarship opportunities "
+            "for your education."
+        )
 
 
 with f2:
 
-    st.info(
-        "💼 **Internships**\n\n"
-        "Find internship opportunities."
-    )
+    with st.container(border=True):
+
+        st.subheader("💼 Internships")
+
+        st.write(
+            "Discover internship opportunities "
+            "based on your interests."
+        )
 
 
 with f3:
 
-    st.info(
-        "📄 **Resume Builder**\n\n"
-        "Create your resume."
-    )
+    with st.container(border=True):
+
+        st.subheader("📄 Resume Builder")
+
+        st.write(
+            "Create and manage your professional "
+            "resume."
+        )
 
 
 with f4:
 
-    st.info(
-        "🤖 **Job Recommendations**\n\n"
-        "Get suitable jobs."
-    )
+    with st.container(border=True):
+
+        st.subheader("🤖 AI Recommendations")
+
+        st.write(
+            "Get suitable job recommendations "
+            "using machine learning."
+        )
